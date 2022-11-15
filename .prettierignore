@@ -1,0 +1,9 @@
+__pycache__
+.pytest_cache
+build
+compose
+google-cloud
+node_modules
+static_files
+media_files
+public
