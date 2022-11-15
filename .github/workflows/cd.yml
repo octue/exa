@@ -1,0 +1,278 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: "Enable tmate debug"
+        type: boolean
+        default: "false"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      id-token: write
+      contents: read
+
+    services:
+      postgres:
+        image: kartoza/postgis:13.0
+        env:
+          POSTGRES_DB: postgres_db
+          POSTGRES_USER: postgres_user
+          POSTGRES_PASSWORD: postgres_password
+          POSTGRES_MULTIPLE_EXTENSIONS: postgis,hstore,postgis_topology,postgis_raster,pgrouting
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: docker.io/bitnami/redis:6.0-debian-10
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+        env:
+          REDIS_PASSWORD: redis_password
+          REDIS_DISABLE_COMMANDS: FLUSHDB,FLUSHALL
+
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      branch_tag_kebab: ${{ steps.tags.outputs.branch_tag_kebab }}
+      branch_tag_screaming: ${{ steps.tags.outputs.branch_tag_screaming}}
+      short_sha: ${{ steps.tags.outputs.short_sha }}
+      image_version_tag: ${{ steps.tags.outputs.image_version_tag }}
+      image_latest_tag: ${{ steps.tags.outputs.image_latest_tag }}
+      image_version_artefact: ${{ steps.artefacts.outputs.image_version_artefact}}
+      image_latest_artefact: ${{ steps.artefacts.outputs.image_latest_artefact}}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+
+      - name: Get version
+        id: get_version
+        run: echo "version=$(poetry version -s)" >> $GITHUB_OUTPUT
+
+      - name: Get slugified branch name and docker image tags
+        id: tags
+        run: |
+          echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          BRANCH_TAG_KEBAB=$(echo ${GITHUB_REF#refs/heads/} | iconv -c -t ascii//TRANSLIT | sed -E 's/[~^]+//g' | sed -E 's/[^a-zA-Z0-9]+/-/g' | sed -E 's/^-+|-+$//g' | tr A-Z a-z)
+          echo "branch_tag_kebab=$BRANCH_TAG_KEBAB" >> $GITHUB_OUTPUT
+          BRANCH_TAG_SCREAMING=$(echo $BRANCH_TAG_KEBAB | tr '[:lower:]' '[:upper:]'  | tr - _)
+          echo "branch_tag_screaming=$BRANCH_TAG_SCREAMING" >> $GITHUB_OUTPUT
+          VERSION=${{steps.get_version.outputs.version}}
+          if [ "$BRANCH_TAG_KEBAB" = "main" ]; then
+            TAG_VERSION=$VERSION
+          else
+            TAG_VERSION="unreleased"
+          fi
+          echo "image_version_tag=$BRANCH_TAG_KEBAB-$TAG_VERSION" >> $GITHUB_OUTPUT
+          echo "image_latest_tag=$BRANCH_TAG_KEBAB-latest" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Authenticate with GCP Workload Identity
+        id: auth
+        uses: google-github-actions/auth@v0
+        with:
+          # NOTE: If setting create_credentials_file=true, .dockerignore file must include `gha-creds-*.json` to avoid baking these credentials into build
+          create_credentials_file: false
+          workload_identity_provider: projects/413423446251/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          service_account: github-actions@octue-django-twined-example.iam.gserviceaccount.com
+
+      - name: Setup gcloud
+        uses: "google-github-actions/setup-gcloud@v0"
+
+      - name: Configure Docker for GCP
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev
+
+      - name: Set image artefact address
+        id: artefacts
+        run: |
+          echo "image_version_artefact=europe-west1-docker.pkg.dev/octue/django-twined-example/server:${{ steps.tags.outputs.image_version_tag}}" >> $GITHUB_OUTPUT
+          echo "image_latest_artefact=europe-west1-docker.pkg.dev/octue/django-twined-example/server:${{ steps.tags.outputs.image_latest_tag}}" >> $GITHUB_OUTPUT
+
+      - name: Build and push artefact with latest and version tags
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          platforms: linux/amd64
+          file: .gcloud/Dockerfile
+          load: false
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ steps.artefacts.outputs.image_version_artefact}}
+            ${{ steps.artefacts.outputs.image_latest_artefact}}
+
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: build
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        # Shouldn't be necessary since we pull code in an image, but it's required by google-github-actions/auth
+        uses: actions/checkout@v3
+
+      - name: Show input values
+        run: |
+          echo "GitHub event_name: ${{ github.event_name }}"
+          echo "GitHub event inputs debug_enabled: ${{ github.event.inputs.debug_enabled }}"
+          echo "Docker image_version_artefact: ${{ needs.build.outputs.image_version_artefact }}"
+          echo "Docker image_latest_artefact: ${{ needs.build.outputs.image_latest_artefact }}"
+          echo "Repository branch_tag_kebab: ${{ needs.build.outputs.branch_tag_kebab }}"
+          echo "Repository branch_tag_screaming: ${{ needs.build.outputs.branch_tag_screaming }}"
+          echo "Repository short_sha: ${{ needs.build.outputs.short_sha }}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Authenticate with GCP Workload Identity
+        id: auth
+        uses: google-github-actions/auth@v0
+        with:
+          # NOTE: If setting create_credentials_file=true, .dockerignore file must include `gha-creds-*.json` to avoid baking these credentials into build
+          create_credentials_file: false
+          workload_identity_provider: projects/413423446251/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          service_account: github-actions@octue-django-twined-example.iam.gserviceaccount.com
+
+      - name: Setup GCloud CLI
+        uses: "google-github-actions/setup-gcloud@v0"
+
+      - name: Get SecretManager prefix
+        id: secrets_prefix
+        run: |
+          echo "prefix=${{ needs.build.outputs.branch_tag_screaming }}" >> $GITHUB_OUTPUT
+
+      - name: Show SecretManager prefix
+        run: |
+          echo "Secretmanager prefix: ${{ steps.secrets_prefix.outputs.prefix }}"
+
+      - name: Access GCP SecretManager
+        id: secrets
+        uses: "google-github-actions/get-secretmanager-secrets@v0"
+        with:
+          secrets: |-
+            DATABASE_URL:octue-django-twined-example/${{ steps.secrets_prefix.outputs.prefix }}_PROXY_DATABASE_URL
+            DJANGO_SECRET_KEY:octue-django-twined-example/${{ steps.secrets_prefix.outputs.prefix }}_DJANGO_SECRET_KEY
+            GOOGLE_APPLICATION_CREDENTIALS:octue-django-twined-example/${{ steps.secrets_prefix.outputs.prefix }}_GOOGLE_APPLICATION_CREDENTIALS
+
+      - name: Connect to Cloud SQL
+        # Note the DATABASE_URL should point to the proxy, i.e. localhost:5432, not to the actual DB
+        uses: wagnerpereira/gce-cloudsql-proxy-action@v2
+        with:
+          instance: octue-amy:europe-west1:wq-prod-instance
+
+      - name: Prepare credentials
+        # Pipe the credentials secret value to disk, allowing it to be mounted in the container just like in cloud run
+        # This lets us use the same secrets pattern as the cloud run service to do the release
+        id: authoverride
+        run: |
+          FILENAME=gha-creds-from-secret-manager.json
+          echo "credentials_file_name=$FILENAME" >> $GITHUB_OUTPUT
+          echo '${{ steps.secrets.outputs.GOOGLE_APPLICATION_CREDENTIALS }}' > $(pwd)/$FILENAME
+          echo "credentials_file_path=$(pwd)/$FILENAME" >> $GITHUB_OUTPUT
+
+      - name: Show credentials filename and path
+        run: |
+          echo "Credentials credentials_file_name: ${{ steps.authoverride.outputs.credentials_file_name }}"
+          echo "Credentials credentials_file_path: ${{ steps.authoverride.outputs.credentials_file_path }}"
+
+      - name: Set dotenv
+        # Set here rather than piped directly to the container, to allow us to usefully debug later steps of this action via reverse shell
+        run: |
+          touch .env
+          echo "DATABASE_URL=${{ steps.secrets.outputs.DATABASE_URL }}" >> .env
+          echo "DJANGO_SECRET_KEY=${{ steps.secrets.outputs.DJANGO_SECRET_KEY }}" >> .env
+          echo "DJANGO_SETTINGS_MODULE=server.settings.${{ needs.build.outputs.branch_tag_kebab }}" >> .env
+          echo "GOOGLE_APPLICATION_ASSETS_BUCKET_NAME=amy-assets-${{ needs.build.outputs.branch_tag_kebab }}" >> .env
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/workspace/${{ steps.authoverride.outputs.credentials_file_name }}" >> .env
+          echo "GOOGLE_TIMEZONE_API_KEY=${{ steps.secrets.outputs.GOOGLE_TIMEZONE_API_KEY }}" >> .env
+          echo "GCP_TASKS_RESOURCE_AFFIX=test-${{ steps.tags.outputs.branch_tag_kebab}}" >> .env
+          echo "GCP_TASKS_DEFAULT_QUEUE_NAME=test-${{ steps.tags.outputs.branch_tag_kebab}}" >> .env
+          echo "GCP_TASKS_DOMAIN=https://doesnt-matter-because-tasks-should-get-mocked.com" >> .env
+
+      - name: Configure Docker for GCP
+        run: gcloud auth configure-docker europe-west1-docker.pkg.dev
+
+      - name: Setup tmate session [DEBUG]
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true'}}
+        uses: mxschmitt/action-tmate@v3
+        env:
+          PERSONAL_ACCESS_TOKEN_GITHUB: ${{ secrets.PACKAGE_TOKEN_GITHUB }}
+
+        # TODO Could do this as a job, now that cloud run jobs are in preview
+      - name: Run Django Release (in cloud run equivalent environment)
+        run: |
+          docker run \
+            --network="host" \
+            --env-file .env \
+            --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
+            --rm \
+            ${{ needs.build.outputs.image_version_artefact }} \
+            amy release
+
+      - name: Deploy to Cloud Run Worker
+        id: deploy_worker
+        uses: google-github-actions/deploy-cloudrun@v0
+        with:
+          env_vars: |
+            ATOMIC_REQUESTS=0
+            GCP_TASKS_RESOURCE_AFFIX=amy-${{ needs.build.outputs.branch_tag_kebab }}
+            GCP_TASKS_DEFAULT_QUEUE_NAME=amy-${{ needs.build.outputs.branch_tag_kebab }}
+            GCP_TASKS_DOMAIN=https://sha${{ needs.build.outputs.short_sha }}---amy-worker-${{ needs.build.outputs.branch_tag }}-pxjn2zhfgq-ew.a.run.app/
+          image: ${{ needs.build.outputs.image_version_artefact }}
+          region: europe-west1
+          service: amy-worker-${{ needs.build.outputs.branch_tag_kebab }}
+          tag: sha${{ needs.build.outputs.short_sha }}
+
+      - name: Deploy to Cloud Run Server
+        id: deploy_api
+        uses: google-github-actions/deploy-cloudrun@v0
+        with:
+          env_vars: |
+            GCP_TASKS_RESOURCE_AFFIX=amy-${{ needs.build.outputs.branch_tag_kebab }}
+            GCP_TASKS_DEFAULT_QUEUE_NAME=amy-${{ needs.build.outputs.branch_tag_kebab }}
+            GCP_TASKS_DOMAIN=${{ steps.deploy_worker.outputs.url }}
+          image: ${{ needs.build.outputs.image_version_artefact }}
+          region: europe-west1
+          service: amy-api-${{ needs.build.outputs.branch_tag_kebab }}
+          tag: sha${{ needs.build.outputs.short_sha }}
+
+      # TODO unapply the migration if it or the deployment(s) failed
+
+      - name: Show Cloud Run Deployment URLs
+        run: |
+          echo "${{ steps.deploy_worker.outputs.url }}"
+          echo "${{ steps.deploy_api.outputs.url }}"
