@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "django-twined-example"
+version = "0.1.0"
+description = ""
+authors = ["Tom Clark <tom@octue.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">3.9,<3.11"
+Django = ">=3.0,<4.0"
+django-gcp = "^0.7.3"
+django-twined = "^0.4.1"
+django-extensions = "^3.2.1"
+psycopg2-binary = "^2.9.5"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^2.20.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

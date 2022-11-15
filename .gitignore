@@ -44,7 +44,6 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
@@ -127,3 +126,20 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Jetbrains stuff. Supposedly you can commit some settings but they inevitably make a hash of it
+.idea/
+
+# Local vscode setitngs
+.vscode/
+
+# Sphinx docs built locally
+docs/html
+docs/doctrees
+
+
+# Pytest cache
+.pytest_cache
+
+# GCP credentials
+gcp-cred*
