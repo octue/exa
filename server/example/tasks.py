@@ -1,79 +1,43 @@
-from django_gcp.tasks import OnDemandTask, PeriodicTask, SubscriberTask
+import logging
+from django_gcp.tasks import OnDemandTask
+from example.models import ERROR_STATUS, IN_PROGRESS_STATUS, FooFightingQuestion, FooFightingTest
 
 
-# NOTE: See the following link for a discussion on disabling pylint when overriding the `run` method.
-# https://stackoverflow.com/questions/73454704/how-to-define-keyword-variadic-arguments-in-a-notimplementedyet-abc-method-avoi
+logger = logging.getLogger(__name__)
 
 
-class BaseAbstractTask(OnDemandTask):
-    """Demonstrates how to create an abstract task class for your own use
+class FooFightingTestTask(OnDemandTask):
+    """An on-demand task to prepare and ask a question to foo-fighting-service
 
-    This still inherits from the Task class so can be used to generate other subclasses of Task.
+    This process is done in an async task, rather than immediately in a request,
+    because it can take several seconds to create the resources required for the question
     """
 
-    abstract = True
+    def enqueue(self, *args, **kwargs):
+        print("FFS HERE")
+        returned = super().enqueue(*args, **kwargs)
+        print("RET", returned)
 
-    def run(self, **_):
-        raise NotImplementedError()
+    def run(self, foo_fighting_test_id=None, **__):
+        """Run a series of FooFightingQuestions to load test the hardware
+        :param int foo_fighting_test_id: The id of the test run
+        :param int number_of_questions: The number of questions that will get created and sent to the foo-fighting service.
+        :param int max_duration: The duration of calculation in seconds that each service will run for.
+        :param bool randomise_duration: Randomise durations of calculation if True. If False, all calculations will run for max_durations seconds.
+        """
 
+        test = FooFightingTest.objects.get(id=foo_fighting_test_id)
 
-class MyOnDemandTask(OnDemandTask):
-    """Demonstrates how to create an on-demand task (by directly inheriting from Task)"""
+        for idx in range(test.number_of_questions):
+            logger.info("Creating question %s of %s for FooFightingTest %s", idx + 1, test.number_of_questions, test.id)
 
-    def run(self, **kwargs):
-        print(
-            "Received message from Cloud Tasks on MyOnDemandTask:\n",
-            kwargs,
-        )
+            question = FooFightingQuestion(foo_fighting_test=test, calculation_status=IN_PROGRESS_STATUS)
+            question.save()
 
-
-class DeduplicatedOnDemandTask(BaseAbstractTask):
-    """Demonstrates what happens when a task fails due to an exception in the task
-    (also shows inheritance from your custom BaseAbstractTask class)
-    """
-
-    deduplicate = True
-
-    def run(self, **kwargs):
-        print(
-            "Received message from Cloud Tasks on FailingOnDemandTask:\n",
-            kwargs,
-        )
-        return 1 / 0
-
-
-class FailingOnDemandTask(BaseAbstractTask):
-    """Demonstrates what happens when a task fails due to an exception in the task
-    (also shows inheritance from your custom BaseAbstractTask class)
-    """
-
-    deduplicate = True
-
-    def run(self, **kwargs):
-        print(
-            "Received message from Cloud Tasks on FailingOnDemandTask:\n",
-            kwargs,
-        )
-        return 1 / 0
-
-
-class MyPeriodicTask(PeriodicTask):
-    """Demonstrates how to create a periodic task running on a cron schedule"""
-
-    run_every = "* * * * *"
-
-    def run(self, **kwargs):
-        print("Received message from Cloud Scheduler on MyPeriodicTask:\n", kwargs)
-
-
-class MySubscriberTask(SubscriberTask):
-    """Demonstrates how to create a task that triggers on a message to a particular Pub/Sub topic"""
-
-    enable_message_ordering = True
-
-    @property
-    def topic_id(self):
-        return "potato"
-
-    def run(self, **kwargs):  # pylint: disable=arguments-differ
-        print("Received message from Pub/Sub on MySubscriberTask:\n", kwargs)
+            try:
+                logger.info("Running FooFightingQuestionTask with question_id=%s", question.id)
+                question.ask()
+            except Exception as e:
+                question.calculation_status = ERROR_STATUS
+                question.save()
+                raise e

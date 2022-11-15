@@ -1,4 +1,5 @@
 import os
+import sys
 
 
 # import google.cloud.storage
@@ -25,14 +26,24 @@ def get_db_conf():
         }
 
 
+# -------------------------
+# ENVIRONMENT WE OPERATE IN
+# -------------------------
+ENVIRONMENT = "main"
+
+
 # ---------------------------------------------------------------------------
 # GENERIC DJANGO SETTINGS FOR THE TEST APP (scroll down for the good stuff)
 # ---------------------------------------------------------------------------
 
 DEBUG = True
 
-PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_DIR = os.path.dirname(PROJECT_DIR)
+
+# Add the backend directory to the system path so django can find the apps without renaming them to e.g. server.example
+# (from https://stackoverflow.com/questions/3948356/how-to-keep-all-my-django-applications-in-specific-folder)
+SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, SERVER_DIR)
+
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -41,10 +52,13 @@ INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "channels",
     "django_extensions",  # Gives us shell_plus and reset_db for manipulating the test server
     "django_gcp.apps.DjangoGCPAppConfig",
-    "server.example",
+    "django_twined",
+    "example.apps.ExampleAppConfig",
 ]
+
 
 MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -55,7 +69,7 @@ MIDDLEWARE = [
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(PROJECT_DIR, "django_gcp", "templates")],
+        "DIRS": [os.path.join(SERVER_DIR, "example", "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -91,7 +105,7 @@ USE_TZ = True
 
 SECRET_KEY = "secretkey"
 
-ASGI_APPLICATION = "server.asgi.application"
+ASGI_APPLICATION = "asgi.application"
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +129,7 @@ STATIC_ROOT = "/static/"
 # HERE'S HOW TO SET UP TASKS
 # ---------------------------------------------------------------------------
 
-GCP_TASKS_DEFAULT_QUEUE_NAME = "example-primary"
+GCP_TASKS_DEFAULT_QUEUE_NAME = f"{ENVIRONMENT}-primary"
 GCP_TASKS_DELIMITER = "--"
 # This is the domain on which the worker app can receive requests
 # You can use localtunnel to easily create your own public domain to
@@ -123,9 +137,16 @@ GCP_TASKS_DELIMITER = "--"
 GCP_TASKS_DOMAIN = "https://outrageous-horny-giraffe.loca.lt"
 GCP_TASKS_EAGER_EXECUTE = False
 GCP_TASKS_REGION = "europe-west1"
-GCP_TASKS_RESOURCE_PREFIX = "django-gcp"
+GCP_TASKS_RESOURCE_AFFIX = f"{ENVIRONMENT}"
 
 
 # client = google.cloud.storage.Client()
 # gcs_bucket = client.get_bucket(GCP_STORAGE_MEDIA["bucket_name"])
 # ddcu_bucket_identifier = register_gcs_bucket(gcs_bucket)
+
+
+# DJANGO TWINED
+TWINED_BASE_URL = "https://my-server.com"
+TWINED_DEFAULT_NAMESPACE = "octue"
+TWINED_DEFAULT_PROJECT_NAME = "octue-django-twined-example"
+TWINED_DEFAULT_TAG = "latest"
