@@ -5,12 +5,13 @@ terraform {
       version = "4.33.0"
     }
   }
-  cloud {
-    organization = "octue"
-    workspaces {
-      name = "django-twined-example"
-    }
-  }
+  # To use terraform cloud, which is a good idea for integrating into CI because it'll avoid deadlocks, uncomment the following:
+  # cloud {
+  #   organization = "your-organisation"
+  #   workspaces {
+  #     name = "your-workspace-which-is-almost-certainly-your-project-name"
+  #   }
+  # }
 }
 
 provider "google" {

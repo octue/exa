@@ -15,6 +15,6 @@ resource "google_sql_database_instance" "postgres_instance" {
 
 
 resource "google_sql_database" "postgres_database" {
-  name     = "${var.environment}-db"
+  name     = "${var.resource_affix}-${var.environment}-db"
   instance = google_sql_database_instance.postgres_instance.name
 }

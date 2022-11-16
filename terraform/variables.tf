@@ -1,11 +1,16 @@
 variable "project" {
   type    = string
-  default = "octue-django-twined-example"
+  default = "octue-exa"
 }
 
 variable "project_number" {
   type = string
-  default = "413423446251"
+  default = "1073024407725"
+}
+
+variable "resource_affix" {
+  type    = string
+  default = "exa"
 }
 
 variable "credentials_file" {

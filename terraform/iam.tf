@@ -4,8 +4,8 @@
 
 
 resource "google_service_account" "operating_service_account" {
-  account_id   = "${var.environment}-server"
-  display_name = "${var.environment}-server"
+  account_id   = "${var.resource_affix}-${var.environment}-server"
+  display_name = "${var.resource_affix}-${var.environment}-server"
   description  = "Operate the example server in the cloud or local environment"
   project      = var.project
 }
