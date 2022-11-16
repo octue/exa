@@ -19,3 +19,10 @@ Exa is a basic django webserver, utilising [`django-gcp`](https://github.com/oct
 Together, the `terraform` directory, the `server.settings`, and the `.github/workflows/cd.yml` files provide a complete working example of how to run django in a serverless cloud environment on GCP, and all the infrastructure required to do so.
 
 Feel free to use this as an example of how to use django on GCP, even without `django-twined` and the octue service aspects.
+
+
+## 🎶 Please Note!
+
+We keep django-gcp` and `django-twined` moving, adding new features regularly but we have scant internal resource here at Octue. As a result, this example may become outdated - we have good intentions but are busy helping climate scientists and renewables engineers fix their problems, so that comes first!
+
+If you'd like us to help you set up django on GCP, or work with you on your data engineering infrastructure, please [get in touch](https://www.octue.com/contact) - be assured all our work doubles down into making the OSS software that you use even better :)
