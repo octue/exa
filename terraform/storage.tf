@@ -2,7 +2,7 @@
 
 # Add a static bucket (public contents)
 resource "google_storage_bucket" "static_assets" {
-  name                        = "${var.resource_affix}-${var.environment}-static-assets"
+  name                        = "${var.resource_affix}-${var.environment}-assets-static"
   location                    = "EU"
   force_destroy               = true
   uniform_bucket_level_access = true
@@ -21,7 +21,7 @@ resource "google_storage_bucket_iam_binding" "static_assets_object_viewer" {
 #   Note: CORS are set to allow direct uploads, enabling upload of files
 #         larger than 32 mb (Cloud Run has a hard limit on file upload size)
 resource "google_storage_bucket" "media_assets" {
-  name                        = "${var.resource_affix}-${var.environment}-media-assets"
+  name                        = "${var.resource_affix}-${var.environment}-assets-media"
   location                    = "EU"
   force_destroy               = true
   uniform_bucket_level_access = false
