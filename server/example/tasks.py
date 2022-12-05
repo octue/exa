@@ -13,11 +13,6 @@ class FooFightingTestTask(OnDemandTask):
     because it can take several seconds to create the resources required for the question
     """
 
-    def enqueue(self, *args, **kwargs):
-        print("FFS HERE")
-        returned = super().enqueue(*args, **kwargs)
-        print("RET", returned)
-
     def run(self, foo_fighting_test_id=None, **__):
         """Run a series of FooFightingQuestions to load test the hardware
 
