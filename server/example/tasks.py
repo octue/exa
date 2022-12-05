@@ -20,10 +20,16 @@ class FooFightingTestTask(OnDemandTask):
 
     def run(self, foo_fighting_test_id=None, **__):
         """Run a series of FooFightingQuestions to load test the hardware
+
+        Question results should contain:
+         - The number of iterations of the mandelbrot calculation completed in the duration of the question
+         - The duration of the questions, which will be equal to `max_duration` if `randomise_duration` is false, otherwise will be `0 <= duration <= max_duration`
+
         :param int foo_fighting_test_id: The id of the test run
         :param int number_of_questions: The number of questions that will get created and sent to the foo-fighting service.
         :param int max_duration: The duration of calculation in seconds that each service will run for.
         :param bool randomise_duration: Randomise durations of calculation if True. If False, all calculations will run for max_durations seconds.
+        :param int mandelbrot_array_size: The dimension of the mandelbrot array that will be calculated.
         """
 
         test = FooFightingTest.objects.get(id=foo_fighting_test_id)
