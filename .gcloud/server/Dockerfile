@@ -33,4 +33,4 @@ RUN poetry install
 # ===============================
 
 # By default, run the production web service on container startup
-CMD exa serve --port $PORT
+CMD daphne --proxy-headers -b 0.0.0.0 -p $PORT server.asgi:application
