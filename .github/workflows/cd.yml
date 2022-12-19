@@ -76,8 +76,8 @@ jobs:
       - name: Set image artefact addresses
         id: artefacts
         run: |
-          echo "image_version_artefact=${{steps.get_terraform_variables.outputs.region}}-docker.pkg.dev/${{steps.get_terraform_variables.outputs.terraform_project}}/${{steps.get_terraform_variables.outputs.terraform_resource_affix}}/server:${{ steps.tags.outputs.image_version_tag}}" >> $GITHUB_OUTPUT
-          echo "image_latest_artefact=${{steps.get_terraform_variables.outputs.region}}-docker.pkg.dev/${{steps.get_terraform_variables.outputs.terraform_project}}/${{steps.get_terraform_variables.outputs.terraform_resource_affix}}//server:${{ steps.tags.outputs.image_latest_tag}}" >> $GITHUB_OUTPUT
+          echo "image_version_artefact=${{steps.get_terraform_variables.outputs.terraform_region}}-docker.pkg.dev/${{steps.get_terraform_variables.outputs.terraform_project}}/${{steps.get_terraform_variables.outputs.terraform_resource_affix}}/server:${{ steps.tags.outputs.image_version_tag}}" >> $GITHUB_OUTPUT
+          echo "image_latest_artefact=${{steps.get_terraform_variables.outputs.terraform_region}}-docker.pkg.dev/${{steps.get_terraform_variables.outputs.terraform_project}}/${{steps.get_terraform_variables.outputs.terraform_resource_affix}}//server:${{ steps.tags.outputs.image_latest_tag}}" >> $GITHUB_OUTPUT
 
   build:
     runs-on: ubuntu-latest
