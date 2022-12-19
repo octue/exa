@@ -142,7 +142,7 @@ def start(addr_port):
 
     Do not use in production (this uses an inefficient and probably insecure server; django's built in runserver).
 
-    `amy start <args>` is shorthand for `python manage.py runserver <args>`
+    `exa start <args>` is shorthand for `python manage.py runserver <args>`
 
     """
     management.call_command("runserver", addr_port)

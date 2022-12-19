@@ -108,7 +108,7 @@ USE_TZ = True
 
 SECRET_KEY = "secretkey"
 
-ASGI_APPLICATION = "asgi.application"
+# ASGI_APPLICATION = "server.asgi:application"
 
 
 # ---------------------------------------------------------------------------
@@ -117,13 +117,13 @@ ASGI_APPLICATION = "asgi.application"
 
 # MEDIA FILES
 DEFAULT_FILE_STORAGE = "django_gcp.storage.GoogleCloudMediaStorage"
-GCP_STORAGE_MEDIA = {"bucket_name": f"{TERRAFORM_RESOURCE_AFFIX}-{TERRAFORM_ENVIRONMENT}-media-assets"}
+GCP_STORAGE_MEDIA = {"bucket_name": f"{TERRAFORM_RESOURCE_AFFIX}-{TERRAFORM_ENVIRONMENT}-assets-media"}
 MEDIA_URL = f"https://storage.googleapis.com/{GCP_STORAGE_MEDIA['bucket_name']}/"
 MEDIA_ROOT = "/media/"
 
 # STATIC FILES
 STATICFILES_STORAGE = "django_gcp.storage.GoogleCloudStaticStorage"
-GCP_STORAGE_STATIC = {"bucket_name": "{TERRAFORM_RESOURCE_AFFIX}-{TERRAFORM_ENVIRONMENT}-static-assets"}
+GCP_STORAGE_STATIC = {"bucket_name": f"{TERRAFORM_RESOURCE_AFFIX}-{TERRAFORM_ENVIRONMENT}-assets-static"}
 STATIC_URL = f"https://storage.googleapis.com/{GCP_STORAGE_STATIC['bucket_name']}/"
 STATIC_ROOT = "/static/"
 
