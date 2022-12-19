@@ -246,7 +246,7 @@ jobs:
             --env-file .env \
             --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
             --rm \
-            ${{ needs.build.outputs.image_version_artefact }} \
+            ${{ needs.info.outputs.image_version_artefact }} \
             exa release
 
       # - name: Deploy to Cloud Run Worker
