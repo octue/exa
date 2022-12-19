@@ -48,7 +48,7 @@ jobs:
 
         # Hard coded variables for now, we need to look into using terraform within the CI/CD processes
       - name: Get Terraform Variables
-        if: get_terraform_variables
+        id: get_terraform_variables
         run: |
           echo "terraform_project=octue-exa" >> $GITHUB_OUTPUT
           echo "terraform_project_number=1073024407725" >> $GITHUB_OUTPUT
