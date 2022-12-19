@@ -28,6 +28,17 @@ resource "google_project_iam_binding" "iam_serviceaccountuser" {
   ]
 }
 
+# Allows the GHA action to call namespaces get to determine the resulting run URLs of the services
+# This should also allow a service to get its own name by using:
+#   https://stackoverflow.com/questions/65628822/google-cloud-run-can-a-service-know-its-own-url/65634104#65634104
+resource "google_project_iam_binding" "run_viewer" {
+  project = var.project
+  role    = "roles/run.viewer"
+  members = [
+    "serviceAccount:${google_service_account.operating_service_account.email}",
+    "serviceAccount:${google_service_account.github_actions_service_account.email}",
+  ]
+}
 
 resource "google_project_iam_binding" "artifactregistry_writer" {
   project = var.project

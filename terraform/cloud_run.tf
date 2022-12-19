@@ -65,6 +65,11 @@ resource "google_cloud_run_v2_service" "server" {
       }
 
       env {
+        name = "DJANO_SETTINGS_MODULE"
+        value = "server.settings"
+      }
+
+      env {
         name = "GOOGLE_APPLICATION_CREDENTIALS"
         value = "/secrets/google-application-credentials"
       }
