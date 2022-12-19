@@ -19,7 +19,7 @@ resource "google_service_account" "github_actions_service_account" {
 }
 
 
-resource "google_project_iam_binding" "service_account_user" {
+resource "google_project_iam_binding" "iam_serviceaccountuser" {
   project = var.project
   role    = "roles/iam.serviceAccountUser"
   members = [
@@ -33,6 +33,55 @@ resource "google_project_iam_binding" "artifactregistry_writer" {
   project = var.project
   role    = "roles/artifactregistry.writer"
   members = [
+    "serviceAccount:${google_service_account.github_actions_service_account.email}",
+  ]
+}
+
+
+resource "google_project_iam_binding" "storage_objectadmin" {
+  project = var.project
+  role = "roles/storage.objectAdmin"
+  members = [
+    "serviceAccount:${google_service_account.operating_service_account.email}",
+    "serviceAccount:${google_service_account.github_actions_service_account.email}",
+  ]
+}
+
+
+resource "google_project_iam_binding" "errorreporting_writer" {
+  project = var.project
+  role = "roles/errorreporting.writer"
+  members = [
+    "serviceAccount:${google_service_account.operating_service_account.email}",
+  ]
+}
+
+
+resource "google_project_iam_binding" "cloudsql_client" {
+  project = var.project
+  role = "roles/cloudsql.client"
+  members = [
+    "serviceAccount:${google_service_account.operating_service_account.email}",
+    "serviceAccount:${google_service_account.github_actions_service_account.email}",
+  ]
+}
+
+
+resource "google_project_iam_binding" "cloudtasks_admin" {
+  project = var.project
+  role = "roles/cloudtasks.admin"
+  members = [
+    "serviceAccount:${google_service_account.operating_service_account.email}",
+    "serviceAccount:${google_service_account.github_actions_service_account.email}",
+  ]
+}
+
+
+resource "google_project_iam_binding" "secretmanager_secretaccessor" {
+  project = var.project
+  role = "roles/secretmanager.secretAccessor"
+  members = [
+    "serviceAccount:${google_service_account.operating_service_account.email}",
     "serviceAccount:${google_service_account.github_actions_service_account.email}",
   ]
 }

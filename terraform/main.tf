@@ -2,7 +2,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "4.33.0"
+      version = "4.46.0"
     }
   }
   # To use terraform cloud, which is a good idea for integrating into CI because it'll avoid deadlocks, uncomment the following:
