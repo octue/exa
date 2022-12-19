@@ -37,6 +37,15 @@ resource "google_project_iam_binding" "github_actions_service_account_user" {
 }
 
 
+resource "google_project_iam_binding" "github_actions_artifactregistry_writer" {
+  project = var.project
+  role    = "roles/artifactregistry.writer"
+  members = [
+    "serviceAccount:${google_service_account.github_actions_service_account.email}",
+  ]
+}
+
+
 resource "google_iam_workload_identity_pool" "github_actions_pool" {
     display_name              = "github-actions-pool"
     project                   = var.project
