@@ -181,7 +181,7 @@ jobs:
       - name: Get SecretManager prefix
         id: secrets_prefix
         run: |
-          echo "prefix=${{ needs.info.outputs.terraform_project }}/${{ needs.info.outputs.terraform_resource_affix }}-${{ needs.info.outputs.terraform_environment }}" >> $GITHUB_OUTPUT
+          echo "prefix=${{ needs.info.outputs.terraform_project }}/${{ needs.info.outputs.terraform_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}" >> $GITHUB_OUTPUT
 
       - name: Show SecretManager prefix
         run: |
