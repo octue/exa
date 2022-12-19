@@ -33,4 +33,4 @@ RUN poetry install
 # ===============================
 
 # By default, run the production web service on container startup
-CMD exa start --port $PORT
+CMD exa serve --port $PORT

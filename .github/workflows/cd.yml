@@ -225,8 +225,8 @@ jobs:
           echo "DJANGO_SECRET_KEY=${{ steps.secrets.outputs.DJANGO_SECRET_KEY }}" >> .env
           echo "DJANGO_SETTINGS_MODULE=server.settings" >> .env
           echo "GOOGLE_APPLICATION_CREDENTIALS=/workspace/${{ steps.authoverride.outputs.credentials_file_name }}" >> .env
-          echo "GCP_TASKS_RESOURCE_AFFIX=test-${{ steps.tags.outputs.branch_tag_kebab}}" >> .env
-          echo "GCP_TASKS_DEFAULT_QUEUE_NAME=test-${{ steps.tags.outputs.branch_tag_kebab}}" >> .env
+          echo "GCP_TASKS_RESOURCE_AFFIX=${{ needs.info.outputs.terraform_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}" >> .env
+          echo "GCP_TASKS_DEFAULT_QUEUE_NAME=${{ needs.info.outputs.terraform_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}" >> .env
           echo "GCP_TASKS_DOMAIN=https://doesnt-matter-because-tasks-should-get-mocked.com" >> .env
 
       - name: Configure Docker for GCP
@@ -239,15 +239,15 @@ jobs:
           PERSONAL_ACCESS_TOKEN_GITHUB: ${{ secrets.PACKAGE_TOKEN_GITHUB }}
 
         # TODO Could do this as a job, now that cloud run jobs are in preview
-      - name: Run Django Release (in cloud run equivalent environment)
-        run: |
-          docker run \
-            --network="host" \
-            --env-file .env \
-            --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
-            --rm \
-            ${{ needs.info.outputs.image_version_artefact }} \
-            exa release
+      # - name: Run Django Release (in cloud run equivalent environment)
+      #   run: |
+      #     docker run \
+      #       --network="host" \
+      #       --env-file .env \
+      #       --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
+      #       --rm \
+      #       ${{ needs.info.outputs.image_version_artefact }} \
+      #       exa release
 
       # - name: Deploy to Cloud Run Worker
       #   id: deploy_worker
@@ -258,27 +258,25 @@ jobs:
       #       GCP_TASKS_RESOURCE_AFFIX=${{ needs.build.outputs.branch_tag_kebab }}
       #       GCP_TASKS_DEFAULT_QUEUE_NAME=${{ needs.build.outputs.branch_tag_kebab }}-primary
       #       GCP_TASKS_DOMAIN=https://sha${{ needs.build.outputs.short_sha }}---example-worker-${{ needs.build.outputs.branch_tag }}-pxjn2zhfgq-ew.a.run.app/
-      #     image: ${{ needs.build.outputs.image_version_artefact }}
+      #     image: ${{ needs.info.outputs.image_version_artefact }}
       #     region: europe-west1
-      #     service: example-worker-${{ needs.build.outputs.branch_tag_kebab }}
-      #     tag: sha${{ needs.build.outputs.short_sha }}
+      #     service: example-worker-${{ needs.info.outputs.branch_tag_kebab }}
+      #     tag: sha${{ needs.info.outputs.short_sha }}
 
       - name: Deploy to Cloud Run Server
         id: deploy_api
         uses: google-github-actions/deploy-cloudrun@v0
         with:
-          # env_vars: |
-          #   GCP_TASKS_RESOURCE_AFFIX=${{ needs.build.outputs.branch_tag_kebab }}
-          #   GCP_TASKS_DEFAULT_QUEUE_NAME=${{ needs.build.outputs.branch_tag_kebab }}-primary
-          #   # GCP_TASKS_DOMAIN=${{ steps.deploy_worker.outputs.url }}
-          image: ${{ needs.build.outputs.image_version_artefact }}
+          # GCP_TASKS_DOMAIN=${{ steps.deploy_worker.outputs.url }}
+          env_vars: |
+            GCP_TASKS_RESOURCE_AFFIX=${{ needs.info.outputs.terraform_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}
+            GCP_TASKS_DEFAULT_QUEUE_NAME=${{ needs.info.outputs.terraform_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}-primary
+          image: ${{ needs.info.outputs.image_version_artefact }}
           region: europe-west1
-          service: example-server-${{ needs.build.outputs.branch_tag_kebab }}
-          tag: sha${{ needs.build.outputs.short_sha }}
-
+          service: ${{ needs.info.outputs.terraform_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}-server
+          tag: sha${{ needs.info.outputs.short_sha }}
       # TODO unapply the migration if it or the deployment(s) failed
-
-      - name: Show Cloud Run Deployment URLs
-        run: |
-          echo "${{ steps.deploy_worker.outputs.url }}"
-          echo "${{ steps.deploy_api.outputs.url }}"
+      # - name: Show Cloud Run Deployment URLs
+      #   run: |
+      #     echo "${{ steps.deploy_worker.outputs.url }}"
+      #     echo "${{ steps.deploy_api.outputs.url }}"
