@@ -13,51 +13,27 @@ on:
         default: "false"
 
 jobs:
-  build:
+  info:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+
+    timeout-minutes: 5
 
     permissions:
-      id-token: write
       contents: read
 
-    services:
-      postgres:
-        image: kartoza/postgis:13.0
-        env:
-          POSTGRES_DB: postgres_db
-          POSTGRES_USER: postgres_user
-          POSTGRES_PASSWORD: postgres_password
-          POSTGRES_MULTIPLE_EXTENSIONS: postgis,hstore,postgis_topology,postgis_raster,pgrouting
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: docker.io/bitnami/redis:6.0-debian-10
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-        env:
-          REDIS_PASSWORD: redis_password
-          REDIS_DISABLE_COMMANDS: FLUSHDB,FLUSHALL
-
     outputs:
-      version: ${{ steps.get_version.outputs.version }}
       branch_tag_kebab: ${{ steps.tags.outputs.branch_tag_kebab }}
       branch_tag_screaming: ${{ steps.tags.outputs.branch_tag_screaming}}
-      short_sha: ${{ steps.tags.outputs.short_sha }}
-      image_version_tag: ${{ steps.tags.outputs.image_version_tag }}
+      image_latest_artefact: ${{ steps.artefacts.outputs.image_latest_artefact}}
       image_latest_tag: ${{ steps.tags.outputs.image_latest_tag }}
       image_version_artefact: ${{ steps.artefacts.outputs.image_version_artefact}}
-      image_latest_artefact: ${{ steps.artefacts.outputs.image_latest_artefact}}
+      image_version_tag: ${{ steps.tags.outputs.image_version_tag }}
+      short_sha: ${{ steps.tags.outputs.short_sha }}
+      terraform_project: ${{ steps.get_terraform_variables.outputs.terraform_project}}
+      terraform_project_number: ${{ steps.get_terraform_variables.outputs.terraform_project_number}}
+      terraform_region: ${{ steps.get_terraform_variables.outputs.terraform_region}}
+      terraform_resource_affix: ${{ steps.get_terraform_variables.outputs.terraform_resource_affix}}
+      version: ${{ steps.get_version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -70,7 +46,17 @@ jobs:
         id: get_version
         run: echo "version=$(poetry version -s)" >> $GITHUB_OUTPUT
 
-      - name: Get slugified branch name and docker image tags
+        # Hard coded variables for now, we need to look into using terraform within the CI/CD processes
+      - name: Get Terraform Variables
+        if: get_terraform_variables
+        run: |
+          echo "terraform_project=octue-exa" >> $GITHUB_OUTPUT
+          echo "terraform_project_number=1073024407725" >> $GITHUB_OUTPUT
+          echo "terraform_region=europe-west1" >> $GITHUB_OUTPUT
+          echo "terraform_resource_affix=exa" >> $GITHUB_OUTPUT
+          echo "terraform_environment=main" >> $GITHUB_OUTPUT
+
+      - name: Get slugified branch name, resource names, and docker image tags
         id: tags
         run: |
           echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
@@ -87,6 +73,42 @@ jobs:
           echo "image_version_tag=$BRANCH_TAG_KEBAB-$TAG_VERSION" >> $GITHUB_OUTPUT
           echo "image_latest_tag=$BRANCH_TAG_KEBAB-latest" >> $GITHUB_OUTPUT
 
+      - name: Set image artefact addresses
+        id: artefacts
+        run: |
+          echo "image_version_artefact=${{steps.get_terraform_variables.outputs.region}}-docker.pkg.dev/${{steps.get_terraform_variables.outputs.terraform_project}}/${{steps.get_terraform_variables.outputs.terraform_resource_affix}}/server:${{ steps.tags.outputs.image_version_tag}}" >> $GITHUB_OUTPUT
+          echo "image_latest_artefact=${{steps.get_terraform_variables.outputs.region}}-docker.pkg.dev/${{steps.get_terraform_variables.outputs.terraform_project}}/${{steps.get_terraform_variables.outputs.terraform_resource_affix}}//server:${{ steps.tags.outputs.image_latest_tag}}" >> $GITHUB_OUTPUT
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: info
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Show input values
+        run: |
+          echo "GitHub event_name: ${{ github.event_name }}"
+          echo "GitHub event inputs debug_enabled: ${{ github.event.inputs.debug_enabled }}"
+          echo "Docker image_latest_artefact: ${{ needs.info.outputs.image_latest_artefact }}"
+          echo "Docker image_latest_tag: ${{ needs.info.outputs.image_latest_tag }}"
+          echo "Docker image_version_artefact: ${{ needs.info.outputs.image_version_artefact }}"
+          echo "Docker image_version_tag: ${{ needs.info.outputs.image_version_tag }}"
+          echo "Repository branch_tag_kebab: ${{ needs.info.outputs.branch_tag_kebab }}"
+          echo "Repository branch_tag_screaming: ${{ needs.info.outputs.branch_tag_screaming }}"
+          echo "Repository short_sha: ${{ needs.info.outputs.short_sha }}"
+          echo "Repository version: ${{ needs.info.outputs.version }}"
+          echo "Terraform terraform_project: ${{ needs.info.outputs.terraform_project }}"
+          echo "Terraform terraform_project_number: ${{ needs.info.outputs.terraform_project_number }}"
+          echo "Terraform terraform_region: ${{ needs.info.outputs.terraform_region }}"
+          echo "Terraform terraform_resource_affix: ${{ needs.info.outputs.terraform_resource_affix }}"
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -99,20 +121,14 @@ jobs:
         with:
           # NOTE: If setting create_credentials_file=true, .dockerignore file must include `gha-creds-*.json` to avoid baking these credentials into build
           create_credentials_file: false
-          workload_identity_provider: projects/413423446251/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
-          service_account: github-actions@octue-django-twined-example.iam.gserviceaccount.com
+          workload_identity_provider: projects/${{steps.get_terraform_variables.outputs.terraform_project_number}}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          service_account: github-actions@${{steps.get_terraform_variables.outputs.terraform_project}}.iam.gserviceaccount.com
 
       - name: Setup gcloud
         uses: "google-github-actions/setup-gcloud@v0"
 
       - name: Configure Docker for GCP
-        run: gcloud auth configure-docker europe-west1-docker.pkg.dev
-
-      - name: Set image artefact address
-        id: artefacts
-        run: |
-          echo "image_version_artefact=europe-west1-docker.pkg.dev/octue/django-twined-example/server:${{ steps.tags.outputs.image_version_tag}}" >> $GITHUB_OUTPUT
-          echo "image_latest_artefact=europe-west1-docker.pkg.dev/octue/django-twined-example/server:${{ steps.tags.outputs.image_latest_tag}}" >> $GITHUB_OUTPUT
+        run: gcloud auth configure-docker ${{ needs.info.outputs.terraform_region }}-docker.pkg.dev
 
       - name: Build and push artefact with latest and version tags
         uses: docker/build-push-action@v3
@@ -142,16 +158,6 @@ jobs:
         # Shouldn't be necessary since we pull code in an image, but it's required by google-github-actions/auth
         uses: actions/checkout@v3
 
-      - name: Show input values
-        run: |
-          echo "GitHub event_name: ${{ github.event_name }}"
-          echo "GitHub event inputs debug_enabled: ${{ github.event.inputs.debug_enabled }}"
-          echo "Docker image_version_artefact: ${{ needs.build.outputs.image_version_artefact }}"
-          echo "Docker image_latest_artefact: ${{ needs.build.outputs.image_latest_artefact }}"
-          echo "Repository branch_tag_kebab: ${{ needs.build.outputs.branch_tag_kebab }}"
-          echo "Repository branch_tag_screaming: ${{ needs.build.outputs.branch_tag_screaming }}"
-          echo "Repository short_sha: ${{ needs.build.outputs.short_sha }}"
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -164,8 +170,8 @@ jobs:
         with:
           # NOTE: If setting create_credentials_file=true, .dockerignore file must include `gha-creds-*.json` to avoid baking these credentials into build
           create_credentials_file: false
-          workload_identity_provider: projects/413423446251/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
-          service_account: github-actions@octue-django-twined-example.iam.gserviceaccount.com
+          workload_identity_provider: projects/${{ needs.info.outputs.terraform_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          service_account: github-actions@${{ needs.info.outputs.terraform_project }}.iam.gserviceaccount.com
 
       - name: Setup GCloud CLI
         uses: "google-github-actions/setup-gcloud@v0"
@@ -173,7 +179,7 @@ jobs:
       - name: Get SecretManager prefix
         id: secrets_prefix
         run: |
-          echo "prefix=${{ needs.build.outputs.branch_tag_screaming }}" >> $GITHUB_OUTPUT
+          echo "prefix=${{ needs.info.outputs.terraform_project }}/${{ needs.info.outputs.terraform_resource_affix }}_${{ needs.info.outputs.terraform_environment }}" >> $GITHUB_OUTPUT
 
       - name: Show SecretManager prefix
         run: |
@@ -184,15 +190,15 @@ jobs:
         uses: "google-github-actions/get-secretmanager-secrets@v0"
         with:
           secrets: |-
-            DATABASE_URL:octue-django-twined-example/${{ steps.secrets_prefix.outputs.prefix }}_PROXY_DATABASE_URL
-            DJANGO_SECRET_KEY:octue-django-twined-example/${{ steps.secrets_prefix.outputs.prefix }}_DJANGO_SECRET_KEY
-            GOOGLE_APPLICATION_CREDENTIALS:octue-django-twined-example/${{ steps.secrets_prefix.outputs.prefix }}_GOOGLE_APPLICATION_CREDENTIALS
+            DATABASE_URL:${{ steps.secrets_prefix.outputs.prefix }}_proxy_database_url
+            DJANGO_SECRET_KEY:${{ steps.secrets_prefix.outputs.prefix }}_django_secret_key
+            GOOGLE_APPLICATION_CREDENTIALS:${{ steps.secrets_prefix.outputs.prefix }}_google_application_credentials
 
       - name: Connect to Cloud SQL
         # Note the DATABASE_URL should point to the proxy, i.e. localhost:5432, not to the actual DB
         uses: wagnerpereira/gce-cloudsql-proxy-action@v2
         with:
-          instance: octue-amy:europe-west1:wq-prod-instance
+          instance: ${{ needs.info.outputs.terraform_project }}:${{ needs.info.outputs.terraform_region }}:primary
 
       - name: Prepare credentials
         # Pipe the credentials secret value to disk, allowing it to be mounted in the container just like in cloud run
@@ -215,7 +221,7 @@ jobs:
           touch .env
           echo "DATABASE_URL=${{ steps.secrets.outputs.DATABASE_URL }}" >> .env
           echo "DJANGO_SECRET_KEY=${{ steps.secrets.outputs.DJANGO_SECRET_KEY }}" >> .env
-          echo "DJANGO_SETTINGS_MODULE=server.settings.${{ needs.build.outputs.branch_tag_kebab }}" >> .env
+          echo "DJANGO_SETTINGS_MODULE=server.settings.${{ needs.build.outputs.terraform_environment }}" >> .env
           echo "GOOGLE_APPLICATION_ASSETS_BUCKET_NAME=amy-assets-${{ needs.build.outputs.branch_tag_kebab }}" >> .env
           echo "GOOGLE_APPLICATION_CREDENTIALS=/workspace/${{ steps.authoverride.outputs.credentials_file_name }}" >> .env
           echo "GOOGLE_TIMEZONE_API_KEY=${{ steps.secrets.outputs.GOOGLE_TIMEZONE_API_KEY }}" >> .env
@@ -241,7 +247,7 @@ jobs:
             --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
             --rm \
             ${{ needs.build.outputs.image_version_artefact }} \
-            amy release
+            exa release
 
       - name: Deploy to Cloud Run Worker
         id: deploy_worker
@@ -249,12 +255,12 @@ jobs:
         with:
           env_vars: |
             ATOMIC_REQUESTS=0
-            GCP_TASKS_RESOURCE_AFFIX=amy-${{ needs.build.outputs.branch_tag_kebab }}
-            GCP_TASKS_DEFAULT_QUEUE_NAME=amy-${{ needs.build.outputs.branch_tag_kebab }}
-            GCP_TASKS_DOMAIN=https://sha${{ needs.build.outputs.short_sha }}---amy-worker-${{ needs.build.outputs.branch_tag }}-pxjn2zhfgq-ew.a.run.app/
+            GCP_TASKS_RESOURCE_AFFIX=${{ needs.build.outputs.branch_tag_kebab }}
+            GCP_TASKS_DEFAULT_QUEUE_NAME=${{ needs.build.outputs.branch_tag_kebab }}-primary
+            GCP_TASKS_DOMAIN=https://sha${{ needs.build.outputs.short_sha }}---example-worker-${{ needs.build.outputs.branch_tag }}-pxjn2zhfgq-ew.a.run.app/
           image: ${{ needs.build.outputs.image_version_artefact }}
           region: europe-west1
-          service: amy-worker-${{ needs.build.outputs.branch_tag_kebab }}
+          service: example-worker-${{ needs.build.outputs.branch_tag_kebab }}
           tag: sha${{ needs.build.outputs.short_sha }}
 
       - name: Deploy to Cloud Run Server
@@ -262,12 +268,12 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v0
         with:
           env_vars: |
-            GCP_TASKS_RESOURCE_AFFIX=amy-${{ needs.build.outputs.branch_tag_kebab }}
-            GCP_TASKS_DEFAULT_QUEUE_NAME=amy-${{ needs.build.outputs.branch_tag_kebab }}
+            GCP_TASKS_RESOURCE_AFFIX=${{ needs.build.outputs.branch_tag_kebab }}
+            GCP_TASKS_DEFAULT_QUEUE_NAME=${{ needs.build.outputs.branch_tag_kebab }}-primary
             GCP_TASKS_DOMAIN=${{ steps.deploy_worker.outputs.url }}
           image: ${{ needs.build.outputs.image_version_artefact }}
           region: europe-west1
-          service: amy-api-${{ needs.build.outputs.branch_tag_kebab }}
+          service: example-server-${{ needs.build.outputs.branch_tag_kebab }}
           tag: sha${{ needs.build.outputs.short_sha }}
 
       # TODO unapply the migration if it or the deployment(s) failed
