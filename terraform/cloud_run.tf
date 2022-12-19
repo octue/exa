@@ -1,23 +1,3 @@
-# resource "google_cloud_run_service" "server" {
-#   name     = "${var.resource_affix}-${var.environment}-server"
-#   location = "europe-west1"
-
-#   template {
-#     spec {
-#       containers {
-#         image = "${var.region}.pkg.dev/${var.resource_affix}/server"
-#       }
-#     }
-#     metadata {
-#       annotations = {
-#         "autoscaling.knative.dev/maxScale"      = "10"
-#         "run.googleapis.com/cloudsql-instances" = google_sql_database_instance.postgres_instance.connection_name
-#         "run.googleapis.com/client-name"        = "terraform"
-#       }
-#     }
-#   }
-#   autogenerate_revision_name = true
-# }
 
 
 # data "google_iam_policy" "noauth" {
