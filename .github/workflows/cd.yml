@@ -135,7 +135,7 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
-          file: .gcloud/Dockerfile
+          file: .devcontainer/Dockerfile
           load: false
           push: true
           cache-from: type=gha
