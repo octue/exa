@@ -77,7 +77,7 @@ jobs:
         id: artefacts
         run: |
           echo "image_version_artefact=${{steps.get_terraform_variables.outputs.terraform_region}}-docker.pkg.dev/${{steps.get_terraform_variables.outputs.terraform_project}}/${{steps.get_terraform_variables.outputs.terraform_resource_affix}}/server:${{ steps.tags.outputs.image_version_tag}}" >> $GITHUB_OUTPUT
-          echo "image_latest_artefact=${{steps.get_terraform_variables.outputs.terraform_region}}-docker.pkg.dev/${{steps.get_terraform_variables.outputs.terraform_project}}/${{steps.get_terraform_variables.outputs.terraform_resource_affix}}//server:${{ steps.tags.outputs.image_latest_tag}}" >> $GITHUB_OUTPUT
+          echo "image_latest_artefact=${{steps.get_terraform_variables.outputs.terraform_region}}-docker.pkg.dev/${{steps.get_terraform_variables.outputs.terraform_project}}/${{steps.get_terraform_variables.outputs.terraform_resource_affix}}/server:${{ steps.tags.outputs.image_latest_tag}}" >> $GITHUB_OUTPUT
 
   build:
     runs-on: ubuntu-latest
@@ -121,8 +121,8 @@ jobs:
         with:
           # NOTE: If setting create_credentials_file=true, .dockerignore file must include `gha-creds-*.json` to avoid baking these credentials into build
           create_credentials_file: false
-          workload_identity_provider: projects/${{steps.get_terraform_variables.outputs.terraform_project_number}}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
-          service_account: github-actions@${{steps.get_terraform_variables.outputs.terraform_project}}.iam.gserviceaccount.com
+          workload_identity_provider: projects/${{ needs.info.outputs.terraform_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          service_account: github-actions@${{ needs.info.outputs.terraform_project }}.iam.gserviceaccount.com
 
       - name: Setup gcloud
         uses: "google-github-actions/setup-gcloud@v0"
@@ -141,8 +141,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ steps.artefacts.outputs.image_version_artefact}}
-            ${{ steps.artefacts.outputs.image_latest_artefact}}
+            ${{ needs.info.outputs.image_version_artefact }}
+            ${{ needs.info.outputs.image_latest_artefact }}
 
   deploy:
     runs-on: ubuntu-latest
