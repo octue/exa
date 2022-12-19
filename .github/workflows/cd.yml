@@ -1,4 +1,4 @@
-name: cdgc
+name: cd
 
 on:
   push:
