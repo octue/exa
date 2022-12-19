@@ -11,15 +11,6 @@ resource "google_service_account" "operating_service_account" {
 }
 
 
-resource "google_project_iam_binding" "operating_service_account_user" {
-  project = var.project
-  role    = "roles/iam.serviceAccountUser"
-  members = [
-    "serviceAccount:${google_service_account.operating_service_account.email}",
-  ]
-}
-
-
 resource "google_service_account" "github_actions_service_account" {
     account_id   = "github-actions-ci"
     description  = "Allow GitHub Actions to deploy code onto resources"
@@ -28,16 +19,17 @@ resource "google_service_account" "github_actions_service_account" {
 }
 
 
-resource "google_project_iam_binding" "github_actions_service_account_user" {
+resource "google_project_iam_binding" "service_account_user" {
   project = var.project
   role    = "roles/iam.serviceAccountUser"
   members = [
+    "serviceAccount:${google_service_account.operating_service_account.email}",
     "serviceAccount:${google_service_account.github_actions_service_account.email}",
   ]
 }
 
 
-resource "google_project_iam_binding" "github_actions_artifactregistry_writer" {
+resource "google_project_iam_binding" "artifactregistry_writer" {
   project = var.project
   role    = "roles/artifactregistry.writer"
   members = [
