@@ -120,9 +120,9 @@ jobs:
         uses: google-github-actions/auth@v0
         with:
           # NOTE: If setting create_credentials_file=true, .dockerignore file must include `gha-creds-*.json` to avoid baking these credentials into build
-          create_credentials_file: false
+          create_credentials_file: true
           workload_identity_provider: projects/${{ needs.info.outputs.terraform_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
-          service_account: github-actions@${{ needs.info.outputs.terraform_project }}.iam.gserviceaccount.com
+          service_account: github-actions-ci@${{ needs.info.outputs.terraform_project }}.iam.gserviceaccount.com
 
       - name: Setup gcloud
         uses: "google-github-actions/setup-gcloud@v0"
@@ -169,9 +169,9 @@ jobs:
         uses: google-github-actions/auth@v0
         with:
           # NOTE: If setting create_credentials_file=true, .dockerignore file must include `gha-creds-*.json` to avoid baking these credentials into build
-          create_credentials_file: false
+          create_credentials_file: true
           workload_identity_provider: projects/${{ needs.info.outputs.terraform_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
-          service_account: github-actions@${{ needs.info.outputs.terraform_project }}.iam.gserviceaccount.com
+          service_account: github-actions-ci@${{ needs.info.outputs.terraform_project }}.iam.gserviceaccount.com
 
       - name: Setup GCloud CLI
         uses: "google-github-actions/setup-gcloud@v0"
