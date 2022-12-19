@@ -38,3 +38,8 @@ variable "environments" {
   type        = list(string)
   default     = ["main", "thclark"]
 }
+
+variable "github_organisation" {
+  type= string
+  default= "octue"
+}
