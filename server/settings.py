@@ -1,29 +1,27 @@
 import os
 import sys
+import environ
 
 
-# import google.cloud.storage
-# from django_gcp.storage.bucket_registry import register_gcs_bucket
+env = environ.Env()
 
 
 def get_db_conf():
     """
-    Configures database according to the DATABASE_ENGINE environment
-    variable. Defaults to SQlite.
-    This method is used to let tests run against different database backends.
+    Configures database for postgres from a URL if supplied, otherwise
+    from the default used with the devcontainer
     """
-    database_engine = os.environ.get("DATABASE_ENGINE", "sqlite")
-    if database_engine == "sqlite":
-        return {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}
-    elif database_engine == "postgres":
-        return {
+    return env.db(
+        "DATABASE_URL",
+        {
             "ENGINE": "django.db.backends.postgresql_psycopg2",
             "NAME": "postgres_db",
             "USER": "postgres_user",
             "PASSWORD": "postgres_password",
             "HOST": "localhost",
             "PORT": "5432",
-        }
+        },
+    )
 
 
 # -----------------------------------------------------------
