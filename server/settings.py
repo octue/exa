@@ -45,17 +45,6 @@ DEBUG = env.bool("DJANGO_DEBUG", default=True)
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SERVER_DIR)
 
-ALLOWED_HOSTS = [
-    "localhost",
-    ".localhost",
-    "web",
-    "0.0.0.0",
-    "127.0.0.1",
-    ".run.app",
-    ".a.run.app",
-    "exa-main-server-fhngvhbkyq-ew.a.run.app",
-    ".loca.lt",
-]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
@@ -100,8 +89,9 @@ TEMPLATES = [
 
 ALLOWED_HOSTS = [
     "localhost",
-    ".loca.lt",
-]  # Adding loca.lt allows developers to expose the example server using localtunnel
+    ".loca.lt",  # Adding loca.lt allows developers to expose the example server using localtunnel
+    ".a.run.app",  # Allow this to run on cloud run endpoints
+]
 
 DATABASES = {"default": get_db_conf()}
 
