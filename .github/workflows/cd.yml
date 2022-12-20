@@ -235,15 +235,17 @@ jobs:
       - name: Print tmate docker command [DEBUG]
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true'}}
         run: |
-          echo "If debugging with tmate, you can exec into the container with the command:
-          docker run \
+          echo "If debugging with tmate, you can exec into the container with the command:"
+          echo "docker run \
             --network="host" \
             --env-file .env \
             --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
+            -it \
             --rm \
             ${{ needs.info.outputs.image_version_artefact }} \
-            exa <your-command>
+            bash
           "
+          echo "Then you can use the 'exa <your-command>' CLI or do 'python manage.py <whatever>'"
 
       - name: Setup tmate session [DEBUG]
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true'}}
