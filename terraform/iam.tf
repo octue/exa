@@ -28,6 +28,16 @@ resource "google_project_iam_binding" "iam_serviceaccountuser" {
   ]
 }
 
+resource "google_project_iam_binding" "pubsub_editor" {
+  project = var.project
+  role    = "roles/pubsub.editor"
+  members = [
+    "serviceAccount:${google_service_account.operating_service_account.email}",
+    "serviceAccount:${google_service_account.github_actions_service_account.email}",
+  ]
+}
+
+
 # Allows the GHA action to call namespaces get to determine the resulting run URLs of the services
 # This should also allow a service to get its own name by using:
 #   https://stackoverflow.com/questions/65628822/google-cloud-run-can-a-service-know-its-own-url/65634104#65634104
@@ -78,12 +88,22 @@ resource "google_project_iam_binding" "cloudsql_client" {
 }
 
 
+# Allow django-gcp.tasks to create and update task queues
 resource "google_project_iam_binding" "cloudtasks_admin" {
   project = var.project
   role = "roles/cloudtasks.admin"
   members = [
     "serviceAccount:${google_service_account.operating_service_account.email}",
     "serviceAccount:${google_service_account.github_actions_service_account.email}",
+  ]
+}
+
+# Allow django-gcp.tasks to create periodic tasks in google cloud scheduler
+resource "google_project_iam_binding" "cloudscheduler_admin" {
+  project = var.project
+  role    = "roles/cloudscheduler.admin"
+  members = [
+    "serviceAccount:${google_service_account.operating_service_account.email}",
   ]
 }
 
