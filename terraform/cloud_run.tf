@@ -1,21 +1,6 @@
 
 
-# data "google_iam_policy" "noauth" {
-#   binding {
-#     role = "roles/run.invoker"
-#     members = [
-#       "allUsers",
-#     ]
-#   }
-# }
 
-
-# resource "google_cloud_run_service_iam_policy" "noauth" {
-#   location    = google_cloud_run_service.server.location
-#   project     = google_cloud_run_service.server.project
-#   service     = google_cloud_run_service.server.name
-#   policy_data = data.google_iam_policy.noauth.policy_data
-# }
 
 
 
@@ -51,8 +36,12 @@ resource "google_cloud_run_v2_service" "server" {
       }
     }
 
+    # Container will ultimately be in the following pattern:
+    #    image = "${var.region}.pkg.dev/${var.project}/${var.resource_affix}/server:${var.environment}-latest"
+    # But now, we set up a placeholder container because that won't exist yet
+    # (it's created by GitHub actions into the artefact repository so won't be initially available)
     containers {
-      image = "${var.region}.pkg.dev/${var.project}/${var.resource_affix}/server:${var.environment}-latest"
+      image = "gcr.io/cloudrun/placeholder"
 
       env {
         name = "GCP_REGION"
@@ -111,4 +100,22 @@ resource "google_cloud_run_v2_service" "server" {
     percent = 100
   }
   depends_on = [google_secret_manager_secret_version.secret_versions]
+}
+
+
+data "google_iam_policy" "noauth" {
+  binding {
+    role = "roles/run.invoker"
+    members = [
+      "allUsers",
+    ]
+  }
+}
+
+
+resource "google_cloud_run_service_iam_policy" "noauth" {
+  location    = google_cloud_run_service.server.location
+  project     = google_cloud_run_service.server.project
+  service     = google_cloud_run_service.server.name
+  policy_data = data.google_iam_policy.noauth.policy_data
 }

@@ -37,7 +37,7 @@ TERRAFORM_REGION = "europe-west1"
 # GENERIC DJANGO SETTINGS FOR THE TEST APP
 # ---------------------------------------------------------------------------
 
-DEBUG = True
+DEBUG = env.bool("DJANGO_DEBUG", default=True)
 
 
 # Add the backend directory to the system path so django can find the apps without renaming them to e.g. server.example
@@ -45,6 +45,7 @@ DEBUG = True
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SERVER_DIR)
 
+ALLOWED_HOSTS = ["localhost", ".localhost", "web", "0.0.0.0", "127.0.0.1", ".a.run.app", ".loca.lt"]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
