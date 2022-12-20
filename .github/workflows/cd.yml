@@ -233,6 +233,7 @@ jobs:
         run: gcloud auth configure-docker europe-west1-docker.pkg.dev
 
       - name: Print tmate docker command [DEBUG]
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true'}}
         run: |
           echo "If debugging with tmate, you can exec into the container with the command:
           docker run \
