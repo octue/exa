@@ -232,6 +232,18 @@ jobs:
       - name: Configure Docker for GCP
         run: gcloud auth configure-docker europe-west1-docker.pkg.dev
 
+      - name: Print tmate docker command [DEBUG]
+        run: |
+          echo "If debugging with tmate, you can exec into the container with the command:
+          docker run \
+            --network="host" \
+            --env-file .env \
+            --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
+            --rm \
+            ${{ needs.info.outputs.image_version_artefact }} \
+            exa <your-command>
+          "
+
       - name: Setup tmate session [DEBUG]
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true'}}
         uses: mxschmitt/action-tmate@v3
@@ -240,6 +252,8 @@ jobs:
 
         # TODO Could do this as a job, now that cloud run jobs are in preview
       # - name: Run Django Release (in cloud run equivalent environment)
+      #   id: release
+      #   if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.debug_enabled != 'true'}}
       #   run: |
       #     docker run \
       #       --network="host" \
@@ -251,6 +265,7 @@ jobs:
 
       # - name: Deploy to Cloud Run Worker
       #   id: deploy_worker
+      #   if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.debug_enabled != 'true'}}
       #   uses: google-github-actions/deploy-cloudrun@v0
       #   with:
       #     env_vars: |
@@ -265,6 +280,7 @@ jobs:
 
       - name: Deploy to Cloud Run Server
         id: deploy_api
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.debug_enabled != 'true'}}
         uses: google-github-actions/deploy-cloudrun@v0
         with:
           # GCP_TASKS_DOMAIN=${{ steps.deploy_worker.outputs.url }}
@@ -275,6 +291,7 @@ jobs:
           region: europe-west1
           service: ${{ needs.info.outputs.terraform_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}-server
           tag: sha${{ needs.info.outputs.short_sha }}
+
       # TODO unapply the migration if it or the deployment(s) failed
       # - name: Show Cloud Run Deployment URLs
       #   run: |
