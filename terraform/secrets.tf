@@ -3,7 +3,7 @@
 variable "secret_names" {
   description = "A list of secrets to be created and made accessible to the server"
   type        = list(string)
-  default     = ["db-uri", "django-secret-key", "google-application-credentials"]
+  default     = ["db-uri", "db-proxy-uri", "django-secret-key", "google-application-credentials"]
 }
 
 resource "google_secret_manager_secret" "secrets" {
@@ -14,11 +14,12 @@ resource "google_secret_manager_secret" "secrets" {
   }
 }
 
-resource "google_secret_manager_secret_version" "secret_versions" {
-  count = length(google_secret_manager_secret.secrets)
-  secret = google_secret_manager_secret.secrets[count.index].name
-  secret_data = "change this in production"
-}
+# TODO Figure out how to manage the contents of these. In the meantime, manually set them!
+# resource "google_secret_manager_secret_version" "secret_versions" {
+#   count = length(google_secret_manager_secret.secrets)
+#   secret = google_secret_manager_secret.secrets[count.index].name
+#   secret_data = "change this in production"
+# }
 
 # Fine grained resource access
 # resource "google_secret_manager_secret_iam_binding" "secret_accessor" {

@@ -11,17 +11,17 @@ def get_db_conf():
     Configures database for postgres from a URL if supplied, otherwise
     from the default used with the devcontainer
     """
-    print(env.str("DATABASE_URL", default=""))
-    if len(env.str("DATABASE_URL", default="")) > 0:
-        return env.db("DATABASE_URL")
-    return {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": "postgres_db",
-        "USER": "postgres_user",
-        "PASSWORD": "postgres_password",
-        "HOST": "localhost",
-        "PORT": "5432",
-    }
+    env.db(
+        "DATABASE_URL",
+        default={
+            "ENGINE": "django.db.backends.postgresql_psycopg2",
+            "NAME": "postgres_db",
+            "USER": "postgres_user",
+            "PASSWORD": "postgres_password",
+            "HOST": "localhost",
+            "PORT": "5432",
+        },
+    )
 
 
 # -----------------------------------------------------------
