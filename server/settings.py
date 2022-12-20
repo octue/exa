@@ -151,3 +151,4 @@ GCP_TASKS_RESOURCE_AFFIX = f"{TERRAFORM_RESOURCE_AFFIX}-{TERRAFORM_ENVIRONMENT}"
 TWINED_BASE_URL = GCP_TASKS_DOMAIN  # The base url to which ServiceUsageEvents get pushed when services are running. You typically want this to be a worker URL, to consume the event stream.
 TWINED_DEFAULT_NAMESPACE = TERRAFORM_PROJECT_NAME
 TWINED_DEFAULT_TAG = "latest"
+TWINNED_FDEFAULT_PROJECT_NAME = TERRAFORM_PROJECT_NAME
