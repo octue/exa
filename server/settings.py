@@ -52,6 +52,7 @@ ALLOWED_HOSTS = [
     "0.0.0.0",
     "127.0.0.1",
     ".run.app",
+    ".a.run.app",
     "exa-main-server-fhngvhbkyq-ew.a.run.app",
     ".loca.lt",
 ]
