@@ -45,7 +45,16 @@ DEBUG = env.bool("DJANGO_DEBUG", default=True)
 SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SERVER_DIR)
 
-ALLOWED_HOSTS = ["localhost", ".localhost", "web", "0.0.0.0", "127.0.0.1", ".a.run.app", ".loca.lt"]
+ALLOWED_HOSTS = [
+    "localhost",
+    ".localhost",
+    "web",
+    "0.0.0.0",
+    "127.0.0.1",
+    ".run.app",
+    "exa-main-server-fhngvhbkyq-ew.a.run.app",
+    ".loca.lt",
+]
 
 INSTALLED_APPS = [
     "django.contrib.auth",
