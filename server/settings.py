@@ -137,7 +137,7 @@ GCP_TASKS_DELIMITER = "--"
 # This is the domain on which the worker app can receive requests
 # You can use localtunnel to easily create your own public domain to
 # run end-to-end integration tests with a real GCP project
-GCP_TASKS_DOMAIN = "https://outrageous-horny-giraffe.loca.lt"
+GCP_TASKS_DOMAIN = env.str("GCP_TASKS_DOMAIN", default="https://outrageous-horny-giraffe.loca.lt")
 GCP_TASKS_EAGER_EXECUTE = True
 GCP_TASKS_REGION = TERRAFORM_REGION
 GCP_TASKS_RESOURCE_AFFIX = f"{TERRAFORM_RESOURCE_AFFIX}-{TERRAFORM_ENVIRONMENT}"
