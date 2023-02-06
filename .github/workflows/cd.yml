@@ -24,9 +24,9 @@ jobs:
     outputs:
       branch_tag_kebab: ${{ steps.get-deployment-info.outputs.branch_tag_kebab }}
       branch_tag_screaming: ${{ steps.get-deployment-info.outputs.branch_tag_screaming}}
-      image_latest_artefact: ${{ steps.get-deployment-info.outputs.image_latest_artefact}}
+      image_latest_artifact: ${{ steps.get-deployment-info.outputs.image_latest_artifact}}
       image_latest_tag: ${{ steps.get-deployment-info.outputs.image_latest_tag }}
-      image_version_artefact: ${{ steps.get-deployment-info.outputs.image_version_artefact}}
+      image_version_artifact: ${{ steps.get-deployment-info.outputs.image_version_artifact}}
       image_version_tag: ${{ steps.get-deployment-info.outputs.image_version_tag }}
       short_sha: ${{ steps.get-deployment-info.outputs.short_sha }}
       gcp_project_name: ${{ steps.get-deployment-info.outputs.gcp_project_name}}
@@ -45,7 +45,7 @@ jobs:
 
       - name: Get deployment info
         id: get-deployment-info
-        uses: octue/get-deployment-info@0.1.2
+        uses: octue/get-deployment-info@0.1.3
         with:
           gcp_project_name: octue-exa
           gcp_project_number: 1073024407725
@@ -88,7 +88,7 @@ jobs:
       - name: Configure Docker for GCP
         run: gcloud auth configure-docker ${{ needs.info.outputs.gcp_region }}-docker.pkg.dev
 
-      - name: Build and push artefact with latest and version tags
+      - name: Build and push artifact with latest and version tags
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -99,8 +99,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ needs.info.outputs.image_version_artefact }}
-            ${{ needs.info.outputs.image_latest_artefact }}
+            ${{ needs.info.outputs.image_version_artifact }}
+            ${{ needs.info.outputs.image_latest_artifact }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -200,7 +200,7 @@ jobs:
             --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
             -it \
             --rm \
-            ${{ needs.info.outputs.image_version_artefact }} \
+            ${{ needs.info.outputs.image_version_artifact }} \
             bash
           "
           echo "Then you can use the 'exa <your-command>' CLI or do 'python manage.py <whatever>'"
@@ -222,7 +222,7 @@ jobs:
             --env-file .env \
             --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
             --rm \
-            ${{ needs.info.outputs.image_version_artefact }} \
+            ${{ needs.info.outputs.image_version_artifact }} \
             exa release
 
       # - name: Deploy to Cloud Run Worker
@@ -235,7 +235,7 @@ jobs:
       #       GCP_TASKS_RESOURCE_AFFIX=${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}
       #       GCP_TASKS_DEFAULT_QUEUE_NAME=${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}-primary
       #       GCP_TASKS_DOMAIN=https://sha${{ needs.info.outputs.short_sha }}---${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}-worker-fhngvhbkyq-ew.a.run.app/
-      #     image: ${{ needs.info.outputs.image_version_artefact }}
+      #     image: ${{ needs.info.outputs.image_version_artifact }}
       #     region: europe-west1
       #     service: example-worker-${{ needs.info.outputs.branch_tag_kebab }}
       #     tag: sha${{ needs.info.outputs.short_sha }}
@@ -252,7 +252,7 @@ jobs:
             GCP_TASKS_RESOURCE_AFFIX=${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}
             GCP_TASKS_DEFAULT_QUEUE_NAME=${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}-primary
             GCP_TASKS_DOMAIN=https://sha${{ needs.info.outputs.short_sha }}---${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}-server-fhngvhbkyq-ew.a.run.app/
-          image: ${{ needs.info.outputs.image_version_artefact }}
+          image: ${{ needs.info.outputs.image_version_artifact }}
           region: europe-west1
           service: ${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}-server
           tag: sha${{ needs.info.outputs.short_sha }}
