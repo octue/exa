@@ -9,7 +9,7 @@ license = "MIT"
 python = ">3.9,<3.11"
 Django = ">=3.0,<4.0"
 django-gcp = "^0.7.3"
-django-twined = "^0.4.1"
+django-twined = {git = "https://github.com/octue/django-twined.git", rev = "use-octue-without-answer-topics"}
 django-extensions = "^3.2.1"
 psycopg2-binary = "^2.9.5"
 click = "^8.1.3"
