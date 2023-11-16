@@ -7,12 +7,6 @@ on:
       image:
         description: "The URI of the image to run as a container"
         type: string
-      environment:
-        description: "The environment to run the container in"
-        type: choice
-        options:
-          - staging
-          - production
 
 jobs:
   info:
