@@ -21,12 +21,13 @@ jobs:
     permissions:
       contents: read
 
+    # TODO: Update spelling of "artefact" to "artifact" when GitHub actions manages to run the version of the `octue/get-deployment-info` action we're asking it to.
     outputs:
       branch_tag_kebab: ${{ steps.get-deployment-info.outputs.branch_tag_kebab }}
       branch_tag_screaming: ${{ steps.get-deployment-info.outputs.branch_tag_screaming}}
-      image_latest_artifact: ${{ steps.get-deployment-info.outputs.image_latest_artifact}}
+      image_latest_artifact: ${{ steps.get-deployment-info.outputs.image_latest_artefact}}
       image_latest_tag: ${{ steps.get-deployment-info.outputs.image_latest_tag }}
-      image_version_artifact: ${{ steps.get-deployment-info.outputs.image_version_artifact}}
+      image_version_artifact: ${{ steps.get-deployment-info.outputs.image_version_artefact}}
       image_version_tag: ${{ steps.get-deployment-info.outputs.image_version_tag }}
       short_sha: ${{ steps.get-deployment-info.outputs.short_sha }}
       gcp_project_name: ${{ steps.get-deployment-info.outputs.gcp_project_name}}
