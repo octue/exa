@@ -1,0 +1,149 @@
+# A workflow that spins up a container running an image in an environment and facilitates the user exec-ing into it.
+name: shell
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "The URI of the image to run as a container"
+        type: string
+      environment:
+        description: "The environment to run the container in"
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  info:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      contents: read
+
+    outputs:
+      branch_tag_kebab: ${{ steps.get-deployment-info.outputs.branch_tag_kebab }}
+      gcp_project_name: ${{ steps.get-deployment-info.outputs.gcp_project_name}}
+      gcp_project_number: ${{ steps.get-deployment-info.outputs.gcp_project_number}}
+      gcp_region: ${{ steps.get-deployment-info.outputs.gcp_region}}
+      gcp_resource_affix: ${{ steps.get-deployment-info.outputs.gcp_resource_affix}}
+      gcp_service_name: ${{ steps.get-deployment-info.outputs.gcp_service_name}}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install poetry
+        uses: snok/install-poetry@v1
+
+      - name: Get deployment info
+        id: get-deployment-info
+        uses: octue/get-deployment-info@0.1.3
+        with:
+          gcp_project_name: octue-exa
+          gcp_project_number: 1073024407725
+          gcp_region: europe-west1
+          gcp_resource_affix: exa
+          gcp_service_name: server
+
+  spin-up:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: info
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        # Shouldn't be necessary since we pull code in an image, but it's required by google-github-actions/auth
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Authenticate with GCP Workload Identity
+        id: auth
+        uses: google-github-actions/auth@v0
+        with:
+          create_credentials_file: true
+          workload_identity_provider: projects/${{ needs.info.outputs.gcp_project_number }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider
+          service_account: github-actions-ci@${{ needs.info.outputs.gcp_project_name }}.iam.gserviceaccount.com
+
+      - name: Setup GCloud CLI
+        uses: "google-github-actions/setup-gcloud@v0"
+
+      - name: Get SecretManager prefix
+        id: secrets_prefix
+        run: |
+          echo "prefix=${{ needs.info.outputs.gcp_project_name }}/${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}" >> $GITHUB_OUTPUT
+
+      - name: Show SecretManager prefix
+        run: |
+          echo "Secretmanager prefix: ${{ steps.secrets_prefix.outputs.prefix }}"
+
+      - name: Access GCP SecretManager
+        id: secrets
+        uses: "google-github-actions/get-secretmanager-secrets@v0"
+        with:
+          secrets: |-
+            DATABASE_URL:${{ steps.secrets_prefix.outputs.prefix }}-db-proxy-uri
+            DJANGO_SECRET_KEY:${{ steps.secrets_prefix.outputs.prefix }}-django-secret-key
+            GOOGLE_APPLICATION_CREDENTIALS:${{ steps.secrets_prefix.outputs.prefix }}-google-application-credentials
+
+      - name: Connect to Cloud SQL
+        # Note the DATABASE_URL should point to the proxy, i.e. localhost:5432, not to the actual DB
+        uses: wagnerpereira/gce-cloudsql-proxy-action@v2
+        with:
+          instance: ${{ needs.info.outputs.gcp_project_name }}:${{ needs.info.outputs.gcp_region }}:primary
+
+      - name: Prepare credentials
+        # Pipe the credentials secret value to disk, allowing it to be mounted in the container just like in cloud run
+        id: authoverride
+        run: |
+          FILENAME=gha-creds-from-secret-manager.json
+          echo "credentials_file_name=$FILENAME" >> $GITHUB_OUTPUT
+          echo '${{ steps.secrets.outputs.GOOGLE_APPLICATION_CREDENTIALS }}' > $(pwd)/$FILENAME
+          echo "credentials_file_path=$(pwd)/$FILENAME" >> $GITHUB_OUTPUT
+
+      - name: Show credentials filename and path
+        run: |
+          echo "Credentials credentials_file_name: ${{ steps.authoverride.outputs.credentials_file_name }}"
+          echo "Credentials credentials_file_path: ${{ steps.authoverride.outputs.credentials_file_path }}"
+
+      - name: Set dotenv
+        run: |
+          touch .env
+          echo "DATABASE_URL=${{ steps.secrets.outputs.DATABASE_URL }}" >> .env
+          echo "DJANGO_SECRET_KEY=${{ steps.secrets.outputs.DJANGO_SECRET_KEY }}" >> .env
+          echo "DJANGO_SETTINGS_MODULE=server.settings" >> .env
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/workspace/${{ steps.authoverride.outputs.credentials_file_name }}" >> .env
+          echo "GCP_TASKS_RESOURCE_AFFIX=${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}" >> .env
+          echo "GCP_TASKS_DEFAULT_QUEUE_NAME=${{ needs.info.outputs.gcp_resource_affix }}-${{ needs.info.outputs.branch_tag_kebab }}" >> .env
+          echo "GCP_TASKS_DOMAIN=https://doesnt-matter-because-tasks-should-get-mocked.com" >> .env
+
+      - name: Configure Docker for GCP
+        run: gcloud auth configure-docker ${{ needs.info.outputs.gcp_region }}-docker.pkg.dev
+
+      - name: Create start script and print instructions
+        run: |
+          echo "docker run \
+            --network="host" \
+            --env-file .env \
+            --volume ${{ steps.authoverride.outputs.credentials_file_path }}:/workspace/${{ steps.authoverride.outputs.credentials_file_name }} \
+            -it \
+            --rm \
+            ${{ github.event.inputs.image }} \
+            bash
+          " >> start.sh
+          echo "Exec into the container by running `sh start.sh`."
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        env:
+          PERSONAL_ACCESS_TOKEN_GITHUB: ${{ secrets.PACKAGE_TOKEN_GITHUB }}
