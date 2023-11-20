@@ -149,6 +149,6 @@ class FooFightingQuestion(Question):
 
     def get_service_revision(self):
         """If no service revision is set, then simply use the default, otherwise use the specified version"""
-        if getattr(self, "service_revison", None) is None:
+        if getattr(self, "service_revision", None) is None:
             return get_default_service_revision("octue", "exa-foo-fighting-service")
         return self.service_revision
