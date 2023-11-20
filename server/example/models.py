@@ -139,7 +139,7 @@ class FooFightingQuestion(Question):
         """Prepare and return input_values for the question"""
         return {
             "max_duration": int(self.foo_fighting_test.max_duration),
-            "randomise_duration": int(self.foo_fighting_test.randomise_duration),
+            "randomise_duration": self.foo_fighting_test.randomise_duration,
             "test_id": str(self.foo_fighting_test.id),
         }
 
