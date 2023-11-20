@@ -140,7 +140,7 @@ class FooFightingQuestion(Question):
         return {
             "max_duration": int(self.foo_fighting_test.max_duration),
             "randomise_duration": int(self.foo_fighting_test.randomise_duration),
-            "test_id": int(self.foo_fighting_test.id),
+            "test_id": str(self.foo_fighting_test.id),
         }
 
     def get_input_manifest(self):
