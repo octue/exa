@@ -144,8 +144,8 @@ class FooFightingQuestion(Question):
         }
 
     def get_input_manifest(self):
-        """Return an input manifest for the question"""
-        return Manifest()
+        """Return no input manifest for the question."""
+        return None
 
     def get_service_revision(self):
         """If no service revision is set, then simply use the default, otherwise use the specified version"""
