@@ -714,7 +714,7 @@ pika = "^1.2.0"
 type = "git"
 url = "https://github.com/octue/django-twined.git"
 reference = "use-octue-without-answer-topics"
-resolved_reference = "52fa913589bbd418d2a18935e97a69a482352d61"
+resolved_reference = "b874b5e0d66ba147d44e2eb083fa7a169fda37e6"
 
 [[package]]
 name = "executing"
