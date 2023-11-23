@@ -1,7 +1,7 @@
 import logging
 from django.db import models
 from django_twined.models import Question, ServiceUsageEvent, get_default_service_revision
-from octue.resources import Manifest
+from django_twined.models.service_usage_events import QuestionEventsMixin
 
 
 logger = logging.getLogger(__name__)
@@ -43,8 +43,8 @@ class FooFightingTest(models.Model):
     notes = models.TextField(blank=True, null=True)
 
 
-class FooFightingQuestion(Question):
-    """Questions made to the FooFighting service (which analyses the fighting of foos"""
+class FooFightingQuestion(QuestionEventsMixin, Question):
+    """Questions made to the FooFighting service (which analyses the fighting of foos)"""
 
     created = models.DateTimeField(editable=False, auto_now_add=True)
 
@@ -54,66 +54,11 @@ class FooFightingQuestion(Question):
         FooFightingTest, null=False, on_delete=models.CASCADE, related_name="foo_fighting_questions"
     )
 
-    # TODO the following properties should be placed in a mixin in django_twined!!!
-
+    # TODO the following property should be placed in a mixin in django_twined!!!
     @property
     def calculation_status_message(self):
         """Short verbose (human-readable, for display) text indicating status of the question"""
         return STATUS_CODE_MESSAGE_MAP[self.calculation_status]
-
-    @property
-    def delivery_acknowledgement(self):
-        """Returns a ServiceUsageEvent of type 'delivery_acknowledgement' for this question
-
-        Will return None if delivery is not yet acked, or warn on multiple events received whilst returning the first.
-        """
-        try:
-            return self.service_usage_events.get(data__kind="delivery_acknowledgement")
-        except ServiceUsageEvent.DoesNotExist:
-            return None
-        except ServiceUsageEvent.MultipleObjectsReturned:
-            logger.warning(
-                "MultipleObjectsReturned detected for delivery_acknowledgement ServiceUsageEvent on question %s",
-                self.id,
-            )
-            return self.service_usage_events.filter(data__kind="delivery_acknowledgement").first()
-
-    @property
-    def exceptions(self):
-        """Return a queryset of all ServiceUsageEvents of type 'exception' for this question"""
-        return self.service_usage_events.order_by("publish_time").filter(data__kind="exception").all()
-
-    @property
-    def result(self):
-        """Returns a ServiceUsageEvent of type 'result' for this question
-
-        Will return None if delivery is not yet acked, or warn on multiple 'result' events received whilst returning the first.
-        """
-        try:
-            return self.service_usage_events.get(data__kind="result")
-        except ServiceUsageEvent.DoesNotExist:
-            return None
-        except ServiceUsageEvent.MultipleObjectsReturned:
-            logger.warning(
-                "MultipleObjectsReturned detected for result ServiceUsageEvent on question %s",
-                self.id,
-            )
-            return self.service_usage_events.filter(data__kind="result").first()
-
-    @property
-    def log_records(self):
-        """Return a queryset of all ServiceUsageEvents of type 'log_record' for this question"""
-        return self.service_usage_events.order_by("publish_time").filter(data__kind="log_record").all()
-
-    @property
-    def monitor_messages(self):
-        """Return a queryset of all ServiceUsageEvents of type 'monitor_message' for this question"""
-        return self.service_usage_events.order_by("publish_time").filter(data__kind="monitor_message").all()
-
-    @property
-    def latest_heartbeat(self):
-        """Return the latest ServiceUsageEvent of type 'heartbeat'"""
-        return self.service_usage_events.order_by("-publish_time").filter(data__kind="heartbeat").first()
 
     class Meta:
         """Metaclass defining default ordering for FooFighterQuestions"""
