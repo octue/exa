@@ -68,7 +68,7 @@ class FooFightingQuestion(Question):
         Will return None if delivery is not yet acked, or warn on multiple events received whilst returning the first.
         """
         try:
-            return self.service_usage_events.get(data__type="delivery_acknowledgement")
+            return self.service_usage_events.get(data__kind="delivery_acknowledgement")
         except ServiceUsageEvent.DoesNotExist:
             return None
         except ServiceUsageEvent.MultipleObjectsReturned:
@@ -76,12 +76,12 @@ class FooFightingQuestion(Question):
                 "MultipleObjectsReturned detected for delivery_acknowledgement ServiceUsageEvent on question %s",
                 self.id,
             )
-            return self.service_usage_events.filter(data__type="delivery_acknowledgement").first()
+            return self.service_usage_events.filter(data__kind="delivery_acknowledgement").first()
 
     @property
     def exceptions(self):
         """Return a queryset of all ServiceUsageEvents of type 'exception' for this question"""
-        return self.service_usage_events.order_by("publish_time").filter(data__type="exception").all()
+        return self.service_usage_events.order_by("publish_time").filter(data__kind="exception").all()
 
     @property
     def result(self):
@@ -90,7 +90,7 @@ class FooFightingQuestion(Question):
         Will return None if delivery is not yet acked, or warn on multiple 'result' events received whilst returning the first.
         """
         try:
-            return self.service_usage_events.get(data__type="result")
+            return self.service_usage_events.get(data__kind="result")
         except ServiceUsageEvent.DoesNotExist:
             return None
         except ServiceUsageEvent.MultipleObjectsReturned:
@@ -98,22 +98,22 @@ class FooFightingQuestion(Question):
                 "MultipleObjectsReturned detected for result ServiceUsageEvent on question %s",
                 self.id,
             )
-            return self.service_usage_events.filter(data__type="result").first()
+            return self.service_usage_events.filter(data__kind="result").first()
 
     @property
     def log_records(self):
         """Return a queryset of all ServiceUsageEvents of type 'log_record' for this question"""
-        return self.service_usage_events.order_by("publish_time").filter(data__type="log_record").all()
+        return self.service_usage_events.order_by("publish_time").filter(data__kind="log_record").all()
 
     @property
     def monitor_messages(self):
         """Return a queryset of all ServiceUsageEvents of type 'monitor_message' for this question"""
-        return self.service_usage_events.order_by("publish_time").filter(data__type="monitor_message").all()
+        return self.service_usage_events.order_by("publish_time").filter(data__kind="monitor_message").all()
 
     @property
     def latest_heartbeat(self):
         """Return the latest ServiceUsageEvent of type 'heartbeat'"""
-        return self.service_usage_events.order_by("-publish_time").filter(data__type="heartbeat").first()
+        return self.service_usage_events.order_by("-publish_time").filter(data__kind="heartbeat").first()
 
     class Meta:
         """Metaclass defining default ordering for FooFighterQuestions"""
