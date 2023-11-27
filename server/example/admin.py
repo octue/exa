@@ -33,6 +33,28 @@ class FooFightingQuestionAdmin(QuestionAdmin):
     list_display = ("id", "created", "asked", "answered", "calculation_status")
     list_select_related = ("foo_fighting_test",)
 
+    list_filter = (
+        "asked",
+        "calculation_status",
+        "service_revision__namespace",
+        "service_revision__name",
+        "service_revision__tag",
+    )
+
+    readonly_fields = (
+        "answered",
+        "asked",
+        "calculation_status",
+        "created",
+        "id",
+        "log_records",
+        "monitor_messages",
+        "result",
+        "delivery_acknowledgement",
+        "latest_heartbeat",
+        "exceptions",
+    )
+
     fieldsets = (
         (
             None,
