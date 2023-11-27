@@ -1,6 +1,6 @@
 import logging
 from django.db import models
-from django_twined.models import Question, get_default_service_revision
+from django_twined.models import Question, QuestionValuesDatabaseStorageMixin, get_default_service_revision
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class FooFightingTest(models.Model):
     notes = models.TextField(blank=True, null=True)
 
 
-class FooFightingQuestion(Question):
+class FooFightingQuestion(QuestionValuesDatabaseStorageMixin, Question):
     """Questions made to the FooFighting service (which analyses the fighting of foos)"""
 
     created = models.DateTimeField(editable=False, auto_now_add=True)
