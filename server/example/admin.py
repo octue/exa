@@ -32,26 +32,7 @@ class FooFightingQuestionAdmin(QuestionAdmin):
     search_fields = ["id", "service_revision__name", "foo_fighting_test__id", "foo_fighting_test__notes"]
     list_display = ("id", "created", "asked", "answered", "calculation_status")
     list_select_related = ("foo_fighting_test",)
-    list_filter = (
-        "asked",
-        "calculation_status",
-        "service_revision__name",
-        "service_revision__tag",
-    )
-    date_hierarchy = "created"
-    readonly_fields = (
-        "answered",
-        "asked",
-        "calculation_status",
-        "created",
-        "id",
-        "log_records",
-        "monitor_messages",
-        "result",
-        "delivery_acknowledgement",
-        "latest_heartbeat",
-        "exceptions",
-    )
+
     fieldsets = (
         (
             None,
@@ -68,46 +49,14 @@ class FooFightingQuestionAdmin(QuestionAdmin):
                 )
             },
         ),
+        ("Inputs", {"classes": ("collapse",), "fields": ("input_values",)}),
+        ("Outputs", {"classes": ("collapse",), "fields": ("output_values",)}),
         ("Delivery Acknowledgement", {"classes": ("collapse",), "fields": ("delivery_acknowledgement",)}),
         ("Log Records", {"classes": ("collapse",), "fields": ("log_records",)}),
         ("Monitor Messages", {"classes": ("collapse",), "fields": ("monitor_messages",)}),
         ("Result", {"classes": ("collapse",), "fields": ("result",)}),
         ("Exceptions", {"classes": ("collapse",), "fields": ("exceptions",)}),
     )
-
-    # TODO these staticmethods should be part of the QuestionAdmin mixin
-    @staticmethod
-    def delivery_acknowledgement(obj):
-        """Show the delivery acknowledgement entry"""
-        return obj.delivery_acknowledgement.data
-
-    @staticmethod
-    def exceptions(obj):
-        """Show concatenated series of exceptions"""
-        return [event.data for event in obj.exceptions]
-
-    @staticmethod
-    def latest_heartbeat(obj):
-        return obj.latest_heartbeat.data
-
-    @staticmethod
-    def log_records(obj):
-        """Show concatenated series of log records"""
-        logstream = ""
-        for event in obj.log_records:
-            record = event.data["log_record"]
-            logstream += f"{record['levelname']} {record['filename']}:{record['lineno']} {record['msg']}\n"
-        return logstream
-
-    @staticmethod
-    def monitor_messages(obj):
-        """Show concatenated series of monitor_messages"""
-        return [event.data for event in obj.monitor_messages]
-
-    @staticmethod
-    def result(obj):
-        """Show concatenated series of monitor_messages"""
-        return obj.result.data
 
     def has_add_permission(self, request, obj=None):
         """Prevent people from adding questions directly (they're created by the test runs)"""
