@@ -1,10 +1,28 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
+from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin, UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import Group
 from django_twined.admin import QuestionAdmin
+from unfold.admin import ModelAdmin as UnfoldModelAdmin
 
 from .models import FooFightingQuestion, FooFightingTest
 
 
-class FooFightingTestAdmin(admin.ModelAdmin):
+User = get_user_model()
+admin.site.unregister(User)
+
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin, UnfoldModelAdmin):
+    pass
+
+
+@admin.register(Group)
+class GroupAdmin(BaseGroupAdmin, UnfoldModelAdmin):
+    pass
+
+
+class FooFightingTestAdmin(UnfoldModelAdmin):
     search_fields = ["id", "notes"]
     list_display = ("id", "created", "number_of_questions", "max_duration", "randomise_duration")
     list_filter = ("created", "number_of_questions", "max_duration", "randomise_duration")
@@ -28,7 +46,7 @@ class FooFightingTestAdmin(admin.ModelAdmin):
     launch_ask_questions.short_description = "Launch run for selected test(s)"
 
 
-class FooFightingQuestionAdmin(QuestionAdmin):
+class FooFightingQuestionAdmin(QuestionAdmin, UnfoldModelAdmin):
     search_fields = ["id", "service_revision__name", "foo_fighting_test__id", "foo_fighting_test__notes"]
     list_display = ("id", "created", "asked", "answered", "calculation_status")
     list_select_related = ("foo_fighting_test",)
