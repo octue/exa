@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
+    "unfold",
+    "unfold.contrib.filters",
     "django.contrib.admin",
     "django.contrib.messages",
     "django.contrib.staticfiles",
