@@ -10,6 +10,7 @@ from .models import FooFightingQuestion, FooFightingTest
 
 User = get_user_model()
 admin.site.unregister(User)
+admin.site.unregister(Group)
 
 
 @admin.register(User)
