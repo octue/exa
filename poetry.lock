@@ -715,7 +715,7 @@ pika = "^1.2.0"
 type = "git"
 url = "https://github.com/octue/django-twined.git"
 reference = "use-octue-without-answer-topics"
-resolved_reference = "1ec2aeaa6c5413893f4fcf470ab4008d622b6f5d"
+resolved_reference = "b3e6d60be811d5356d155d6c81e5d64c53303f45"
 
 [[package]]
 name = "django-unfold"
